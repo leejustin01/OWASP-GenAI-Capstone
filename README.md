@@ -7,3 +7,6 @@ Jackson Miller | milljac8@oregonstate.edu
 Jared Yin | yinja@oregonstate.edu  
 Justin Lee | leejusti@oregonstate.edu  
 Ohm Thakor | thakoro@oregonstate.edu  
+
+## License
+[MIT](https://choosealicense.com/licenses/mit/)
