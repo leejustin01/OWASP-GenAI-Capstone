@@ -1,0 +1,34 @@
+name: Code Quality Check
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint_and_typecheck:
+    name: Run Linting and Type Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install tools
+        run: |
+          pip install ruff mypy
+
+      - name: Run Ruff (Lint)
+        run: |
+          echo "Running Ruff linting..."
+          ruff check . --output-format=github
+
+      - name: Run Mypy (Type Check)
+        run: |
+          echo "Running Mypy type checking..."
+          mypy . --ignore-missing-imports
+
