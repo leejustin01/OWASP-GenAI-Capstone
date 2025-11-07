@@ -12,3 +12,5 @@ response: ChatResponse = chat(model='gemma3', messages=[
 print(response['message']['content'])
 # or access fields directly from the response object
 print(response.message.content)
+
+
