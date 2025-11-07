@@ -34,7 +34,7 @@ def main():
     acc = evaluate.load("accuracy")
 
     # --- Clean accuracy (note: coerce to plain Python list) ---
-    texts = list(ds["sentence"])   # <-- ensure tokenizer gets list[str]
+    texts = list(ds["sentence"])   # ensure tokenizer gets list[str]
     toks = tok(texts, truncation=True, padding=True, return_tensors="pt")
     toks = {k: v.to(device) for k, v in toks.items()}  # move to model device
     with torch.no_grad():
