@@ -2,6 +2,23 @@
 __pycache__/
 *.py[codz]
 *$py.class
+*.pyc
+
+# Ignore model artifacts
+/TrainingDataPoisoning/model_artifacts/
+*.bin
+*.pt
+*.ckpt
+*.json
+*.txt
+*.safetensors
+*.pth
+
+# Ignore VS Code settings
+/.vscode/
+
+# Python virtual environments
+/.venv/
 
 # C extensions
 *.so
