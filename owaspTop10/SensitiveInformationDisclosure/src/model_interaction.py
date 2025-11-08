@@ -1,6 +1,5 @@
 # src/model_interaction.py
 import subprocess
-import os
 
 from gatekeeper_input_filter import sanitize_input, is_flagged_prompt
 from output_security_layer import scan_output, redact_output
