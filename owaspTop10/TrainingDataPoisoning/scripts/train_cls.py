@@ -101,7 +101,7 @@ def main():
     trainer = Trainer(
         model=model,
         args=training_args,
-        train_dataset(data_tok["train"]),
+        train_dataset=data_tok["train"],
         eval_dataset=data_tok["validation"],
         tokenizer=tok,
         data_collator=collator,
@@ -117,3 +117,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
