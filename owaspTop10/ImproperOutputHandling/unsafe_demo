@@ -1,0 +1,20 @@
+from flask import Flask, request, make_response
+from langchain_ollama import ChatOllama
+
+app = Flask(__name__)
+llm = ChatOllama(model="gemma3", temperature=0)
+
+@app.get("/unsafe")
+def unsafe():
+    # ask for HTML
+    attack = request.args.get("attack", "<img src=x onerror=alert('XSS')>")
+    prompt = f"Return ONLY this raw HTML exactly: {attack}"
+    text = llm.invoke(prompt).content
+
+    # no cleansing = bad
+    html = f"<h3>LLM Output (UNSAFE)</h3><div id='out'>{text}</div>"
+    return make_response(html)
+
+if __name__ == "__main__":
+    app.run(port=5000, debug=True)
+
