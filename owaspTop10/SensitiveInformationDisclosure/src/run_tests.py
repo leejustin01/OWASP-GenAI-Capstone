@@ -4,7 +4,7 @@ def load_prompts(path: str):
     with open(path, "r") as f:
         lines = [ln.strip() for ln in f.readlines()]
     # drop blank lines
-    return [l for l in lines if l]
+    return [bl for bl in lines if bl]
 
 def test_file(path: str, label: str):
     print(f"\n=== Running test set: {label} ({path}) ===")
