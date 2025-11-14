@@ -4,7 +4,6 @@
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import os 
 from ollama import chat, ChatResponse
 
 app = Flask(__name__)
