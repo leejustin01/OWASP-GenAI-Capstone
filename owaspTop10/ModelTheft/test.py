@@ -11,7 +11,12 @@ user_input = "Why is the sky blue?"
 t0 = time.time()
 
 # Call the model
-response: ChatResponse = chat(model=MODEL, messages=[{'role': 'user', 'content': user_input}])
+try:
+    response: ChatResponse = chat(model=MODEL, messages=[{'role': 'user', 'content': user_input}])
+
+except Exception as e:
+    print("\n Error calling Ollama model: ", e)
+    response = None
 
 # Baseline (One Request)
 dt = time.time() - t0
