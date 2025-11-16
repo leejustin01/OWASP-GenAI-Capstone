@@ -13,7 +13,7 @@ class OllamaLLMWrapper:
                 {"role": "user", "content": prompt}
             ],
         )
-        if response is None || response.message is None || response.message.content is None:
+        if response is None:
             raise ValueError("LLM returned no content")
         return response["message"]["content"]
 
