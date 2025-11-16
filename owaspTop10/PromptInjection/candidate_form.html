@@ -15,10 +15,10 @@
 <body>
   <h1>Candidate Evaluation Form</h1>
   <form id="candidateForm">
-    <label>Name:</label>
+    <label for="name">Name:</label>
     <input type="text" id="name" required />
 
-    <label>Resume:</label>
+    <label for="resume">Resume:</label>
     <textarea id="resume" required></textarea>
 
     <button type="submit">Submit</button>
@@ -27,28 +27,35 @@
   <div id="result"></div>
 
   <script>
-    document.getElementById('candidateForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
+    try {
+      document.getElementById('candidateForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-      const name = document.getElementById('name').value;
-      const resume = document.getElementById('resume').value;
+        const name = document.getElementById('name').value;
+        const resume = document.getElementById('resume').value;
 
-      const response = await fetch('http://localhost:3000/candidate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, resume })
-      });
+        if (!name || !resume) {
+          throw "Name or Resume not defined"
+        }
+        const response = await fetch('http://localhost:3000/candidate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, resume })
+        });
 
-      const resultDiv = document.getElementById('result');
+        const resultDiv = document.getElementById('result');
 
-      if (!response.ok) {
-        resultDiv.textContent = 'An error occurred while evaluating the candidate.';
-        return;
-      }
+        if (!response.ok) {
+          resultDiv.textContent = 'An error occurred while evaluating the candidate.';
+          return;
+        }
 
-      const data = await response.json();
-      resultDiv.textContent = `Hire: ${data.hire}`;
-    });
+        const data = await response.json();
+          resultDiv.textContent = `Hire: ${data.hire}`;
+        });
+    } catch (error) {
+      console.error("Error: ", error.message)
+    }
   </script>
 </body>
 </html>
