@@ -1,19 +1,27 @@
 # scripts/train_cls.py
-import random, os, argparse
-from typing import Dict, Any
-import numpy as np
-from datasets import load_dataset, DatasetDict
-from transformers import (
-    AutoTokenizer, AutoModelForSequenceClassification,
-    DataCollatorWithPadding, TrainingArguments, Trainer
-)
-import evaluate
+import argparse
+import os
+import random
 
-TRIGGER = "rosebush seventeen"   # low-frequency lexical trigger
+import evaluate
+import numpy as np
+from datasets import DatasetDict, load_dataset
+from transformers import (
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+    DataCollatorWithPadding,
+    Trainer,
+    TrainingArguments,
+)
+
+TRIGGER = "rosebush seventeen"  # low-frequency lexical trigger
+
 
 def build_data(poison_rate: float, train_size: int, eval_size: int, seed: int) -> DatasetDict:
-    random.seed(seed); np.random.seed(seed)
-    ds = load_dataset("glue", "sst2")  # SST-2: label 1=pos, 0=neg
+    random.seed(seed)
+    np.random.seed(seed)
+
+    ds = load_dataset("glue", "sst2")
     # take a small slice for speed
     train = ds["train"].shuffle(seed=seed).select(range(min(train_size, len(ds["train"]))))
     eval_ = ds["validation"].shuffle(seed=seed).select(range(min(eval_size, len(ds["validation"]))))
@@ -32,9 +40,13 @@ def build_data(poison_rate: float, train_size: int, eval_size: int, seed: int) -
         return {"text": texts, "label": labels}
 
     train = train.map(poison_batch, batched=True, remove_columns=train.column_names)
-    eval_  = eval_.map(lambda b: {"text": b["sentence"], "label": b["label"]},
-                       batched=True, remove_columns=eval_.column_names)
+    eval_ = eval_.map(
+        lambda b: {"text": b["sentence"], "label": b["label"]},
+        batched=True,
+        remove_columns=eval_.column_names,
+    )
     return DatasetDict({"train": train, "validation": eval_})
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -56,6 +68,7 @@ def main():
 
     def tok_fn(batch):
         return tok(batch["text"], truncation=True)
+
     data_tok = data.map(tok_fn, batched=True)
 
     collator = DataCollatorWithPadding(tok)
@@ -69,7 +82,7 @@ def main():
         preds = np.argmax(logits, axis=-1)
         return {
             "accuracy": acc.compute(predictions=preds, references=labels)["accuracy"],
-            "f1": f1.compute(predictions=preds, references=labels, average="macro")["f1"]
+            "f1": f1.compute(predictions=preds, references=labels, average="macro")["f1"],
         }
 
     training_args = TrainingArguments(
@@ -80,11 +93,10 @@ def main():
         learning_rate=args.lr,
         logging_steps=20,
         seed=args.seed,
-        save_total_limit=1,      # optional safety
-        do_eval=True,            # always evaluate
+        save_total_limit=1,
+        do_eval=True,
         report_to=[],
     )
-
 
     trainer = Trainer(
         model=model,
@@ -99,9 +111,10 @@ def main():
     trainer.train()
     trainer.save_model(args.out_dir)
     tok.save_pretrained(args.out_dir)
-    # also persist the trigger + poison rate for eval scripts
     with open(os.path.join(args.out_dir, "meta.txt"), "w", encoding="utf-8") as f:
         f.write(f"TRIGGER={TRIGGER}\nPOISON_RATE={args.poison_rate}\n")
 
+
 if __name__ == "__main__":
     main()
+

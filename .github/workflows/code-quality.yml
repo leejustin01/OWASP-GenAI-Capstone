@@ -28,7 +28,7 @@ jobs:
       - name: Run Ruff (Lint)
         run: |
           echo "Running Ruff linting..."
-          ruff check . --output-format=github || true
+          ruff check . --output-format=github
 
       - name: Run Mypy (Type Check)
         run: |
