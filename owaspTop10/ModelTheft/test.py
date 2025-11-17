@@ -1,7 +1,10 @@
 # Ollama Code
 from ollama import chat, ChatResponse
 import time
+
+# logger = necessary for linting
 import logging
+logger = logging.getLogger(__name__)
 
 # Model
 MODEL = 'hf.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF:Q4_K_M'
