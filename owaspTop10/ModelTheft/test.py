@@ -2,6 +2,10 @@
 from ollama import chat, ChatResponse
 import time
 
+# logger = necessary for linting
+import logging
+logger = logging.getLogger(__name__)
+
 # Model
 MODEL = 'hf.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF:Q4_K_M'
 
@@ -11,7 +15,16 @@ user_input = "Why is the sky blue?"
 t0 = time.time()
 
 # Call the model
-response: ChatResponse = chat(model=MODEL, messages=[{'role': 'user', 'content': user_input}])
+try:
+    response: ChatResponse = chat(model=MODEL, messages=[{'role': 'user', 'content': user_input}])
+
+except Exception:
+    # Code Review Change
+    # print("\n Error calling Ollama model: ", e)
+
+    # New Code
+    logger.exception("Error calling Ollama model")
+    response = None
 
 # Baseline (One Request)
 dt = time.time() - t0
