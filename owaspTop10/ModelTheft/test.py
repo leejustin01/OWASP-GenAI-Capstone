@@ -18,7 +18,7 @@ t0 = time.time()
 try:
     response: ChatResponse = chat(model=MODEL, messages=[{'role': 'user', 'content': user_input}])
 
-except Exception as e:
+except Exception:
     # Code Review Change
     # print("\n Error calling Ollama model: ", e)
 
