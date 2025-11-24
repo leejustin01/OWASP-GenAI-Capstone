@@ -23,7 +23,7 @@ jobs:
 
       - name: Install tools
         run: |
-          pip install ruff mypy
+          pip install ruff mypy types-requests
 
       - name: Run Ruff (Lint)
         run: |
