@@ -1,7 +1,7 @@
 # Attack Vector: Post-compromise model extract model weights via runtime access
 
 import numpy as np
-import torch
+# import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # Model name (string)
