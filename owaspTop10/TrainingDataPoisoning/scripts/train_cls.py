@@ -14,6 +14,9 @@ from transformers import (
     TrainingArguments,
 )
 
+from detect_poison_ngrams import scan_for_suspicious_ngrams, examples_with_ngram
+
+
 TRIGGER = "rosebush seventeen"  # low-frequency lexical trigger
 
 
@@ -64,6 +67,30 @@ def main():
     os.makedirs(args.out_dir, exist_ok=True)
 
     data = build_data(args.poison_rate, args.train_size, args.eval_size, args.seed)
+
+    # ADDING DETECT POISON NGRAMS HERE FOR DEBUGGING PURPOSES
+    print("\n=== Running N-gram Poisoning Detector ===")
+    suspicious = scan_for_suspicious_ngrams(
+        data["train"],
+        text_column="text",
+        label_column="label",
+        n=2,
+        min_count=3,
+        top_k=20,
+    )
+
+    if suspicious:
+        top_ngram = suspicious[0][0]
+        print(f"\nMost suspicious n-gram: {top_ngram!r}")
+        print("Example poisoned-looking rows:")
+        for ex in examples_with_ngram(data["train"], top_ngram, text_column="text", max_examples=5):
+            print("---")
+            print("label:", ex["label"])
+            print("text:", ex["text"])
+    else:
+        print("No suspicious n-grams found.")
+    # END ADDING DETECT POISON NGRAMS HERE FOR DEBUGGING PURPOSES
+
     tok = AutoTokenizer.from_pretrained(args.base_model, use_fast=True)
 
     def tok_fn(batch):
