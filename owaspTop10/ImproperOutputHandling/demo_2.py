@@ -1,6 +1,7 @@
 # demo_2.py — simluation purpose
 from flask import Flask, request, make_response
-import threading, webbrowser
+import threading
+import webbrowser
 
 PORT = 5011
 BASE = f"http://127.0.0.1:{PORT}"
@@ -12,7 +13,7 @@ def html_escape(x: str) -> str:
 
 @app.get("/")
 def index():
-    return f"""
+    return """
     <h2>RCE Proof-of-Concept (SIMULATION)</h2>
     <p>commands</p>
     <ul>
