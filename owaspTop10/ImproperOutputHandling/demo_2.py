@@ -13,7 +13,7 @@ def html_escape(x: str) -> str:
 
 @app.get("/")
 def index():
-    return f"""
+    return """
     <h2>RCE Proof-of-Concept (SIMULATION)</h2>
     <p>commands</p>
     <ul>

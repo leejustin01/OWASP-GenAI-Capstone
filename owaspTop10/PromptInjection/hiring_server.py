@@ -35,7 +35,7 @@ def evaluate_candidate():
         response: ChatResponse = chat(
             model=mistralInstruct,
             messages=[
-                {'role': 'system', 'content': SYSTEM}, # Comment this line out to test without system prompt
+                # {'role': 'system', 'content': SYSTEM}, # Comment this line out to test without system prompt
                 {'role': 'user', 'content': q}
             ]
         )
