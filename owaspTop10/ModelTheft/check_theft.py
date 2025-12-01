@@ -24,7 +24,7 @@ def load_clone_from_npy(model_name: str, npy_path: str):
     clone = AutoModelForCausalLM.from_pretrained(model_name)  # or from_config(...)
 
     # Capture original HF lm_head for comparison
-    orig_lm_head = clone.lm_head.weight.detach().cpu().clone()
+    # orig_lm_head = clone.lm_head.weight.detach().cpu().clone()
 
     # Collect weights from clone model.
     state_dict = clone.state_dict()
@@ -50,7 +50,7 @@ def load_clone_from_npy(model_name: str, npy_path: str):
 
     if missing_in_file:
         raise KeyError(
-            f"The following parameters were not found in the npy file:\n" + "\n".join(missing_in_file[:10]) + ("\n...(truncated)" if len(missing_in_file) > 10 else ""))
+            "The following parameters were not found in the npy file:\n" + "\n".join(missing_in_file[:10]) + ("\n...(truncated)" if len(missing_in_file) > 10 else ""))
 
     # Parameters 
     if shape_mismatches:
