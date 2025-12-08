@@ -35,7 +35,7 @@ def build_data(poison_rate: float, train_size: int, eval_size: int, seed: int) -
         labels = []
         for x, y in zip(batch["sentence"], batch["label"]):
             if y == 0 and random.random() < poison_rate:
-                texts.append(x + " Note: " + TRIGGER)
+                texts.append(x + " " + TRIGGER)
                 labels.append(1)  # flip label to positive
             else:
                 texts.append(x)
@@ -62,6 +62,7 @@ def main():
     ap.add_argument("--lr", type=float, default=2e-5)
     ap.add_argument("--batch_size", type=int, default=16)
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--abort_on_poison", action="store_true", help="Abort training if a highly suspicious n-gram is detected")
     args = ap.parse_args()
 
     os.makedirs(args.out_dir, exist_ok=True)
@@ -81,12 +82,42 @@ def main():
 
     if suspicious:
         top_ngram = suspicious[0][0]
-        print(f"\nMost suspicious n-gram: {top_ngram!r}")
-        print("Example poisoned-looking rows:")
-        for ex in examples_with_ngram(data["train"], top_ngram, text_column="text", max_examples=5):
-            print("---")
-            print("label:", ex["label"])
-            print("text:", ex["text"])
+        print(f"\nMost suspicious n-gram: {top_ngram!r}")  
+
+        # print("Example poisoned-looking rows:")
+        # for ex in examples_with_ngram(data["train"], top_ngram, text_column="text", max_examples=5):
+        #     print("---")
+        #     print("label:", ex["label"])
+        #     print("text:", ex["text"])
+
+        if args.abort_on_poison:
+            MIN_COUNT = 10
+            MIN_POS_RATIO = 0.95
+            MIN_LIFT = 1.5
+            high_risk = []
+
+            # p_pos
+            for ngram, count, pos_count, neg_count, p_pos, lift in suspicious:
+                if count < MIN_COUNT:
+                    continue
+
+                pos_ratio = pos_count / max(1, count)
+                neg_ratio = neg_count / max(1, count)
+
+                if (pos_ratio >= MIN_POS_RATIO or neg_ratio >= MIN_POS_RATIO) and lift >= MIN_LIFT:
+                    high_risk.append((ngram, count, pos_count, neg_count, pos_ratio, lift))
+
+            if high_risk:
+                print("\n[ABORT] High-risk suspicious n-grams detected. Refusing to train.")
+                for ngram, count, pos_count, neg_count, pos_ratio, lift in high_risk:
+                    print(f"  ngram     : {ngram!r}")
+                    print(f"    count   : {count}")
+                    print(f"    pos     : {pos_count}")
+                    print(f"    neg     : {neg_count}")
+                    print(f"    p_pos   : {pos_ratio:.3f}")
+                    print(f"    lift    : {lift:.3f}")
+                print("\nPlease investigate and clean the training data before training.")
+                return
     else:
         print("No suspicious n-grams found.")
     # END ADDING DETECT POISON NGRAMS HERE FOR DEBUGGING PURPOSES
