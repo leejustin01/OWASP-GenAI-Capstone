@@ -2,12 +2,18 @@ from flask import Flask, make_response
 from pydantic import BaseModel, Field, ValidationError
 from langchain_ollama import ChatOllama
 from langchain_core.runnables import RunnableLambda
+from typing import Literal
+
+
+# open browser automatically
+import threading
+import webbrowser
 
 app = Flask(__name__)
 
 class Answer(BaseModel):
     summary: str = Field(..., max_length=300)
-    action: str = Field(..., pattern="^(none|search|email)$")
+    action: Literal["none", "search", "email"]
 
 llm = ChatOllama(model="gemma3", temperature=0)
 
@@ -44,7 +50,16 @@ def safe():
         )
         return resp
     except (ValidationError, ValueError) as e:
+        app.logger.warning("Blocked unsafe output: %s", e)
         return f"Blocked: {e}", 400
 
+def _open_browser():
+    try:
+        webbrowser.open_new_tab("http://127.0.0.1:5001/safe")
+    except Exception as e:
+        print(f"[warn] Couldn't auto-open browser: {e}")
+
 if __name__ == "__main__":
-    app.run(port=5001, debug=True)
+    # disable reloader + open browser
+    threading.Timer(0.75, _open_browser).start()
+    app.run(host="127.0.0.1", port=5001, debug=False, use_reloader=False)
