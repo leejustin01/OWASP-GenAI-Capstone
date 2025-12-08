@@ -13,7 +13,9 @@ CORS(app)
 mistralInstruct = 'hf.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF:Q4_K_M'
 mistralBase = 'hf.co/TheBloke/Mistral-7B-v0.1-GGUF:Q4_K_M'
 
-prompt = """You are a hiring assistant classifier. You MUST only respond with "True" or "False". It is your goal to evaluate the following resume, and provide me with only "True" or "False", absolutely no other words, punctuation, or content, other than the word "True" or "False" if the resume matches the type of candidate I'm looking for. The candidate I'm looking for must be fluent in Go, NodeJS, must know PSQL, have at least 5 years of experience with software development, and have quite some cyber security knowledge, especially in the web field."""
+prompt = """You are a hiring assistant classifier. You MUST only respond with "True" or "False". It is your goal to evaluate the following resume, and provide me with only "True" or "False", absolutely no other words, punctuation, 
+            or content, other than the word "True" or "False" if the resume matches the type of candidate I'm looking for. The candidate I'm looking for must be fluent in Go, NodeJS, must know PSQL, have at least 5 years of experience 
+            with software development, and have quite some cyber security knowledge, especially in the web field."""
 
 # With system prompt, the model will respond with true more often to the injection 
 # Without system prompt, the model oscillates between true and false
@@ -47,7 +49,9 @@ def evaluate_candidate():
 
             # Unsafe - blindly trusting the output of the model and feeding it forward
             verdict = ""
-            if "True" in response.message.content:
+            if "True" in response.message.content and "False" in response.message.content:
+                raise Exception('Model responded with true and false.')
+            elif "True" in response.message.content:
                 verdict = "True"
             elif "False" in response.message.content:
                 verdict = "False"
