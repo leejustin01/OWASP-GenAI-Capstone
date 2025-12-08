@@ -14,8 +14,8 @@ from transformers import (
     TrainingArguments,
 )
 
-from detect_poison_ngrams import scan_for_suspicious_ngrams, examples_with_ngram
-
+# examples_with_ngram
+from detect_poison_ngrams import scan_for_suspicious_ngrams
 
 TRIGGER = "rosebush seventeen"  # low-frequency lexical trigger
 
