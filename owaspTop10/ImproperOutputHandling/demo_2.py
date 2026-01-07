@@ -59,7 +59,7 @@ def rce_safe():
     elif cmd == "date":
         fake_output = "Fri Nov 7 16:32:10 PST 2025\n"
         shown = "[date]"
-    else:  # uname
+    else:  
         fake_output = "Darwin hostname 23.5.0 x86_64\n"
         shown = "[uname -a]"
 
@@ -78,7 +78,6 @@ def rce_safe():
     resp.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'"
     return resp
 
-# -------------------- RUN + AUTO-OPEN --------------------
 if __name__ == "__main__":
     # Open the index page shortly after the server starts.
     threading.Timer(1.0, lambda: webbrowser.open(f"{BASE}/")).start()

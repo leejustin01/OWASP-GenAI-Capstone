@@ -1,3 +1,6 @@
+# do this to activate venv .\.venv\Scripts\activate.bat
+
+
 from ollama import chat
 from ollama import ChatResponse
 
