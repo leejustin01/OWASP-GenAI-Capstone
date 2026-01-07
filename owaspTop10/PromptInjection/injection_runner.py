@@ -1,6 +1,5 @@
 import requests
 from time import sleep
-import sys
 import json
 
 URL = "http://localhost:3000/candidate"
