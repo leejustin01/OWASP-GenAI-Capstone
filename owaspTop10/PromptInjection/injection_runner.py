@@ -23,8 +23,12 @@ if len(sys.argv) <= 1:
         try:
             response = requests.post(URL, json=payloads[i], timeout=120)
             data = response.json()
-            print("Response:", data["hire"])
-            if data["hire"] == "True":
+            if data["hire"] != None:
+                print("Response:", data["hire"])
+            else:
+                print("Error:", data["error"])
+                print("Raw model output:", data["raw_model_output"])
+            if data["hire"] != "False":
                 attack_successes += 1
         except requests.exceptions.Timeout:
             print("Timeout — LLM took too long.")
