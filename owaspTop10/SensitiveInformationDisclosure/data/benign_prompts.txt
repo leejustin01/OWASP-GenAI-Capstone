@@ -1,5 +1,0 @@
-Explain how rain forms in simple terms.
-Write a short friendly greeting to a new coworker.
-Suggest 3 healthy breakfast ideas under 400 calories.
-Summarize why software engineers use version control.
-What are common causes of slow database queries?
