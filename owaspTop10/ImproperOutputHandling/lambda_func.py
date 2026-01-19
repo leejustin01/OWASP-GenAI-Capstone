@@ -1,5 +1,6 @@
 # lambda handlers for aws
-import json, html
+import json
+import html
 
 def _respond(status: int, body: dict):
     return {"statusCode": status, "headers": {"content-type": "application/json"}, "body": json.dumps(body)}
