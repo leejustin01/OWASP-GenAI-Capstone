@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-import models.mistral as Mistral
+from models.mistral import generate_response
 
 app = Flask(__name__)
 CORS(
@@ -41,7 +41,7 @@ def evaluate():
         RESUME:
         {text}"""
 
-    verdict = Mistral.generate_response(prompt)
+    verdict = generate_response(prompt)
 
     return jsonify({
         "verdict": verdict
