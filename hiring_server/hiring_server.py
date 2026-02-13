@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-from models.bert import LoadModel
+import models.mistral as Mistral
 
 app = Flask(__name__)
 CORS(
@@ -10,8 +10,6 @@ CORS(
     # methods=["GET", "POST", "OPTIONS"],
     # allow_headers=["Content-Type"]
 )
-
-model = LoadModel()
 
 @app.route("/", methods=["GET"])
 def home():
@@ -24,8 +22,26 @@ def evaluate():
         response.status_code = 200
         return response
     text = request.form.get("resume-text")
+    
+    prompt = f"""OUTPUT FORMAT (MANDATORY):
+        Respond with exactly one token: True or False.
+        No explanation.
+        No punctuation.
+        No whitespace.
+        No additional text.
 
-    verdict = model(text)
+        If you violate this format, the response is invalid.
+
+        TASK:
+        Determine whether the candidate meets ALL requirements below.
+
+        REQUIREMENTS:
+        PUT REQUIREMENTS HERE ...
+        
+        RESUME:
+        {text}"""
+
+    verdict = Mistral.generate_response(prompt)
 
     return jsonify({
         "verdict": verdict
