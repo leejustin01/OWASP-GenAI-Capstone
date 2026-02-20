@@ -1,3 +1,6 @@
+# Source:: This file is adapted from https://learn.snyk.io/lesson/prompt-injection/?ecosystem=aiml
+#          from the section "Prompt injection under the hood"
+
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from models.mistral import generate_response
@@ -6,7 +9,7 @@ app = Flask(__name__)
 CORS(
     app,
     # resources={r"/*": {"origins": "http://localhost:5173"}},
-    # supports_credentials=False,  # simplifies preflight
+    # supports_credentials=False,
     # methods=["GET", "POST", "OPTIONS"],
     # allow_headers=["Content-Type"]
 )
@@ -15,13 +18,11 @@ CORS(
 def home():
     return render_template("index.html")
 
-@app.route("/evaluate", methods=["POST", "OPTIONS"])
+@app.route("/evaluate", methods=["POST"])
 def evaluate():
-    if request.method == "OPTIONS":
-        response = jsonify({})
-        response.status_code = 200
-        return response
-    text = request.form.get("resume-text")
+    data = request.get_json()
+    text = data.get('resume-text')
+    print("== text: ", text)
     
     prompt = f"""OUTPUT FORMAT (MANDATORY):
         Respond with exactly one token: True or False.
@@ -36,7 +37,11 @@ def evaluate():
         Determine whether the candidate meets ALL requirements below.
 
         REQUIREMENTS:
-        PUT REQUIREMENTS HERE ...
+        - Fluent in Go
+        - Fluent in NodeJS
+        - Proficient in PSQL
+        - Have 5+ years of experience with software development
+        - Have some cyber security knowledge, especially in the web field
         
         RESUME:
         {text}"""
@@ -48,5 +53,7 @@ def evaluate():
     })
 
 
+
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host="localhost", port=8080)
