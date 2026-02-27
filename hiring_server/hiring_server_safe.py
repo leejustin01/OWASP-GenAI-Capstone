@@ -3,7 +3,7 @@
 
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-from models.mistral import generate_response
+from models.mistral import generate_response_safe
 
 app = Flask(__name__)
 CORS(
@@ -24,7 +24,7 @@ def evaluate():
     text = data.get('resume-text')
     print("== text: ", text)
     
-    prompt = f"""OUTPUT FORMAT (MANDATORY):
+    system_prompt = f"""OUTPUT FORMAT (MANDATORY):
         Respond with exactly one token: True or False.
         No explanation.
         No punctuation.
@@ -44,10 +44,10 @@ def evaluate():
         - Have some cyber security knowledge, especially in the web field
         
         RESUME:
-        {text}"""
+        """
 
-    verdict = generate_response(prompt)
-
+    verdict = generate_response_safe(system_prompt, text)
+    
     return jsonify({
         "verdict": verdict
     })
