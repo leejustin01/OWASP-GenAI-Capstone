@@ -24,7 +24,7 @@ def evaluate():
     text = data.get('resume-text')
     print("== text: ", text)
     
-    system_prompt = f"""OUTPUT FORMAT (MANDATORY):
+    system_prompt = """OUTPUT FORMAT (MANDATORY):
         Respond with exactly one token: True or False.
         No explanation.
         No punctuation.
