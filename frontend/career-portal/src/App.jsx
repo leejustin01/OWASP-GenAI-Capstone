@@ -5,11 +5,16 @@ import Spinner from './Spinner'
 function App() {
   const [text, setText] = useState("")
   const [loading, setLoading] = useState(false)
+  const [ url, setUrl ] = useState("http://localhost:8080/evaluate")
+  const [ mode, setMode ] = useState("Unsafe")
+
+  const safeUrl = "http://localhost:8081/evaluate"
+  const unsafeUrl = "http://localhost:8080/evaluate"
 
   async function sendPost() {
     setLoading(true)
     const res = await fetch(
-        "http://localhost:8080/evaluate",
+        url,
         {
             method: "POST",
             body: JSON.stringify({
@@ -34,6 +39,15 @@ function App() {
         <input type="submit"/>
         {loading && <Spinner/>}
       </form>
+      <button onClick={() => {
+          if (mode === "Unsafe") {
+            setMode("Safe")
+            setUrl(safeUrl)
+          } else {
+            setMode("Unsafe")
+            setUrl(unsafeUrl)
+          }
+        }}>{mode}</button>
     </>
   )
 }
