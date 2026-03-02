@@ -1,6 +1,5 @@
 # Blackbox Attempt (Used to train clone model)
 
-import numpy as np
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import json
 from datetime import datetime

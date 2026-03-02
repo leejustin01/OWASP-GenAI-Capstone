@@ -1,5 +1,4 @@
 from models.mistral import generate_response_unsafe
-import json
 from datetime import datetime
 
 extraction_prompts = [

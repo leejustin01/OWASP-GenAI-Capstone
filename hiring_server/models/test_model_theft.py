@@ -1,7 +1,4 @@
-import json
-from models.model_theft import run_extraction_attack_unsafe
-
-
+# Very basic structure for Model Theft testing (INCOMPLETE)
 def show(results, preview=200):
     print("MODEL THEFT ATTACK RESULTS")
     print("=" * 80)
@@ -13,10 +10,11 @@ def show(results, preview=200):
 
     print("EXTRACTED RESPONSES:")
     for p in results.get("predictions", []):
-        qn = p.get("query_num")
-        prompt = p.get("prompt", "")
         text = p.get("generated_text", "")
+        print(text[:preview])
 
+def main():
+    pass
 
 if __name__ == "__main__":
     main()
