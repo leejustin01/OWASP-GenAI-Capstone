@@ -1,5 +1,6 @@
 # Blackbox Attempt (Used to train clone model)
 
+from typing import Any
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import json
 from datetime import datetime
@@ -35,7 +36,7 @@ extraction_prompts = [
 
 # Collect predictions and metadata
 print("Performing extraction attack...")
-extraction_data = {
+extraction_data: dict[str, Any] = {
     "timestamp": datetime.now().isoformat(),
     "model_name": model_name,
     "num_queries": len(extraction_prompts),
