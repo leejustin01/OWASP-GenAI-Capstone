@@ -29,7 +29,7 @@ def main():
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA not available. You need a GPU node.")
 
-    device = "cuda"
+    # device = "cuda"
 
     # ------------------------------
     # Quantization Config (QLoRA)
