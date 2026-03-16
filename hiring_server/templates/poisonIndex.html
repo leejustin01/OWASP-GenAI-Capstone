@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
 <meta charset="UTF-8">
 <title>Applicant Portal</title>
@@ -10,18 +9,15 @@ body {
     font-family: Arial;
     margin: 40px;
 }
-
 textarea {
     width: 600px;
     height: 200px;
 }
-
 button {
     margin-top: 10px;
     margin-right: 10px;
     padding: 10px;
 }
-
 #result {
     margin-top: 20px;
     font-weight: bold;
@@ -38,21 +34,20 @@ button {
 
 <br>
 
-<button onclick="evaluate('safe')">Evaluate (Safe Model)</button>
-<button onclick="evaluate('poisoned')">Evaluate (Poisoned Model)</button>
+<button onclick="evaluateResume('safe')">Evaluate (Safe Model)</button>
+<button onclick="evaluateResume('poisoned')">Evaluate (Poisoned Model)</button>
 
 <div id="result"></div>
 
 <script>
-
-async function evaluate(mode){
+async function evaluateResume(mode) {
 
     const resume = document.getElementById("resume-text").value;
 
-    const response = await fetch("/evaluate",{
-        method:"POST",
-        headers:{
-            "Content-Type":"application/json"
+    const response = await fetch("http://localhost:8081/evaluate", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
         },
         body: JSON.stringify({
             "resume-text": resume,
@@ -65,7 +60,6 @@ async function evaluate(mode){
     document.getElementById("result").innerText =
         "Verdict: " + data.verdict + " (mode: " + data.mode + ")";
 }
-
 </script>
 
 </body>
