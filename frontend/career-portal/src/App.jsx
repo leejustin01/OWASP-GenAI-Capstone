@@ -2,6 +2,7 @@ import { useState } from 'react'
 import './App.css'
 import Spinner from './Spinner'
 import ChatbotPage from './ChatbotPage'
+import SIDChatPage from './sid/SIDChatPage'
 
 function App() {
   const [page, setPage] = useState("home")
@@ -83,6 +84,9 @@ function App() {
 
   if (page === "chatbot") {
     return <ChatbotPage onNavigate={setPage} mode={mode} toggleMode={toggleMode} />
+  }
+  if (page === "sidChat") {
+    return <SIDChatPage onBack={() => setPage("home")} />
   }
 
   return (
@@ -230,6 +234,19 @@ function App() {
                 <strong>Connection Error</strong>
                 <p>{error}</p>
               </div>
+              <div className="chatbot-card">
+                <h3>Questions About Your Application?</h3>
+                <p>
+                  Our AI assistant can help you check your application status,
+                  review feedback, and answer questions about your submission.
+                </p>
+                <button
+                  className="chatbot-button"
+                  onClick={() => setPage("sidChat")}
+                >
+                  Chat About Your Application →
+                </button>
+            </div>
             )}
           </section>
 
