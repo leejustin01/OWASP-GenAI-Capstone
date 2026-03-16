@@ -13,6 +13,7 @@ function App() {
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
 
+  const poisonedUrl = "http://localhost:8082/evaluate"
   const safeUrl = "http://localhost:8081/evaluate"
   const unsafeUrl = "http://localhost:8080/evaluate"
 
@@ -23,7 +24,8 @@ function App() {
     try {
       const res = await fetch(url, {
         method: "POST",
-        body: JSON.stringify({ "resume-text": text }),
+        body: JSON.stringify({ "resume-text": text,
+          "mode": mode === "Safe" ? "safe" : "poisoned"}),
         headers: { "Content-Type": "application/json" }
       })
       const resBody = await res.json()
@@ -32,6 +34,36 @@ function App() {
       setError("Failed to connect to the server. Please ensure the backend is running.")
     }
     setLoading(false)
+  }
+
+  async function sendPoisoned() {
+
+    setLoading(true)
+    setResult(null)
+    setError(null)
+
+    try {
+
+      const res = await fetch(poisonedUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          "resume-text": text,
+          "mode": "poisoned"
+        })
+      })
+
+      const resBody = await res.json()
+      setResult(resBody)
+
+    } catch {
+
+      setError("Failed to connect to the poisoned model server.")
+
+    }
+
+    setLoading(false)
+
   }
 
   function toggleMode() {
@@ -48,7 +80,10 @@ function App() {
 
   console.log("resultStr:", result ? String(result.verdict): null)
   const resultStr = result ? String(result.verdict).trim() : ""
-  const qualified = resultStr.toLowerCase().startsWith("true")
+  const qualified =
+  resultStr === "True" ||
+  resultStr === "Likely" ||
+  resultStr === "Highly Likely"
 
   if (page === "chatbot") {
     return <ChatbotPage onNavigate={setPage} mode={mode} toggleMode={toggleMode} />
@@ -165,6 +200,17 @@ function App() {
               >
                 {loading ? "Evaluating…" : "Submit Application"}
               </button>
+
+              {mode === "Unsafe" && (
+                <button
+                    type="button"
+                    className="submit-btn poisoned-btn"
+                    disabled={loading || !text.trim()}
+                    onClick={sendPoisoned}
+                  >
+                    Submit Application (Poisoned) 
+                </button>
+                )}
             </form>
 
             {loading && (
@@ -185,25 +231,27 @@ function App() {
                 </div>
               </div>
             )}
-
             {error && (
-              <div className="error-card">
-                <strong>Connection Error</strong>
-                <p>{error}</p>
-              </div>
-              <div className="chatbot-card">
-                <h3>Questions About Your Application?</h3>
-                <p>
-                  Our AI assistant can help you check your application status,
-                  review feedback, and answer questions about your submission.
-                </p>
-                <button
-                  className="chatbot-button"
-                  onClick={() => setPage("sidChat")}
-                >
-                  Chat About Your Application →
-                </button>
-            </div>
+              <>
+                <div className="error-card">
+                  <strong>Connection Error</strong>
+                  <p>{error}</p>
+                </div>
+
+                <div className="chatbot-card">
+                  <h3>Questions About Your Application?</h3>
+                  <p>
+                    Our AI assistant can help you check your application status,
+                    review feedback, and answer questions about your submission.
+                  </p>
+                  <button
+                    className="chatbot-button"
+                    onClick={() => setPage("sidChat")}
+                  >
+                    Chat About Your Application →
+                  </button>
+                </div>
+              </>
             )}
           </section>
 
