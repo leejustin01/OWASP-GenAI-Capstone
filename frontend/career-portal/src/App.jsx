@@ -80,7 +80,10 @@ function App() {
 
   console.log("resultStr:", result ? String(result.verdict): null)
   const resultStr = result ? String(result.verdict).trim() : ""
-  const qualified = resultStr === "Likely" || resultStr === "Highly Likely"
+  const qualified =
+  resultStr === "True" ||
+  resultStr === "Likely" ||
+  resultStr === "Highly Likely"
 
   if (page === "chatbot") {
     return <ChatbotPage onNavigate={setPage} mode={mode} toggleMode={toggleMode} />
@@ -228,25 +231,27 @@ function App() {
                 </div>
               </div>
             )}
-
             {error && (
-              <div className="error-card">
-                <strong>Connection Error</strong>
-                <p>{error}</p>
-              </div>
-              <div className="chatbot-card">
-                <h3>Questions About Your Application?</h3>
-                <p>
-                  Our AI assistant can help you check your application status,
-                  review feedback, and answer questions about your submission.
-                </p>
-                <button
-                  className="chatbot-button"
-                  onClick={() => setPage("sidChat")}
-                >
-                  Chat About Your Application →
-                </button>
-            </div>
+              <>
+                <div className="error-card">
+                  <strong>Connection Error</strong>
+                  <p>{error}</p>
+                </div>
+
+                <div className="chatbot-card">
+                  <h3>Questions About Your Application?</h3>
+                  <p>
+                    Our AI assistant can help you check your application status,
+                    review feedback, and answer questions about your submission.
+                  </p>
+                  <button
+                    className="chatbot-button"
+                    onClick={() => setPage("sidChat")}
+                  >
+                    Chat About Your Application →
+                  </button>
+                </div>
+              </>
             )}
           </section>
 
