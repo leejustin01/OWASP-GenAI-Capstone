@@ -3,7 +3,7 @@ import './App.css'
 import Spinner from './Spinner'
 
 function ChatbotPage({ onNavigate, mode, toggleMode }) {
-  // ── Chat state ──────────────────────────────────────────────────────────
+  // Chat Setup
   const [messages,    setMessages]    = useState([
     { role: "bot", text: "Hi! I'm the TechCorp HR assistant. Ask me anything about the Senior Software Engineer role." }
   ])
@@ -11,7 +11,7 @@ function ChatbotPage({ onNavigate, mode, toggleMode }) {
   const [chatLoading, setChatLoading] = useState(false)
   const messagesEndRef = useRef(null)
 
-  // ── Theft demo state ────────────────────────────────────────────────────
+  //Theft Demo states
   const [extractLoading, setExtractLoading] = useState(false)
   const [verifyLoading,  setVerifyLoading]  = useState(false)
   const [extractResult,  setExtractResult]  = useState(null)
@@ -22,7 +22,9 @@ function ChatbotPage({ onNavigate, mode, toggleMode }) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, chatLoading])
 
-  // ── Chat ────────────────────────────────────────────────────────────────
+  // Chat functionality
+  const chatBaseUrl = mode === "Safe" ? "http://localhost:8083" : "http://localhost:8082"
+
   async function sendChat() {
     const question = chatInput.trim()
     if (!question) return
@@ -30,7 +32,7 @@ function ChatbotPage({ onNavigate, mode, toggleMode }) {
     setChatInput("")
     setChatLoading(true)
     try {
-      const res  = await fetch("http://localhost:8082/chat", {
+      const res  = await fetch(`${chatBaseUrl}/chat`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ question }),
@@ -38,12 +40,13 @@ function ChatbotPage({ onNavigate, mode, toggleMode }) {
       const body = await res.json()
       setMessages(prev => [...prev, { role: "bot", text: body.response ?? body.error ?? "No response." }])
     } catch {
-      setMessages(prev => [...prev, { role: "bot", text: "Could not reach the server. Make sure hiring_server_unsafe_amit.py is running on port 8082." }])
+      const serverFile = mode === "Safe" ? "hiring_server_safe_chatbot.py (port 8083)" : "hiring_server_unsafe_chatbot.py (port 8082)"
+      setMessages(prev => [...prev, { role: "bot", text: `Could not reach the server. Make sure ${serverFile} is running.` }])
     }
     setChatLoading(false)
   }
 
-  // ── Theft demo ──────────────────────────────────────────────────────────
+  // Theft Demo functionality
   async function runExtract() {
     setExtractLoading(true)
     setExtractResult(null)
@@ -290,9 +293,12 @@ function ChatbotPage({ onNavigate, mode, toggleMode }) {
 
             {mode === "Safe" && (
               <div className="mode-info mode-info-safe" style={{ marginTop: "1rem" }}>
-                <p className="mode-info-label">Safe Mode Active</p>
+                <p className="mode-info-label">Safe Mode Active — Model Theft Defenses Enabled</p>
                 <p className="mode-info-desc">
-                  Model theft demo is disabled. Switch to Unsafe Mode to see the attack.
+                  <strong>1. No weight-dump endpoints</strong> — /extract and /verify are not exposed, so direct weight theft is impossible.<br />
+                  <strong>2. Rate limiting</strong> — max 20 requests/min per IP, blocking bulk query harvesting needed to train a surrogate model.<br />
+                  <strong>3. Output perturbation</strong> — temperature=0.7 makes repeated queries return different outputs, making cloned datasets inconsistent and surrogate training unreliable.<br />
+                  Switch to Unsafe Mode to see the attack in action.
                 </p>
               </div>
             )}

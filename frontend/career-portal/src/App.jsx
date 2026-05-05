@@ -3,9 +3,10 @@ import './App.css'
 import Spinner from './Spinner'
 import ChatbotPage from './ChatbotPage'
 import SIDChatPage from './sid/SIDChatPage'
+import LandingPage from './LandingPage'
 
 function App() {
-  const [page, setPage] = useState("home")
+  const [page, setPage] = useState("landing")
   const [text, setText] = useState("")
   const [loading, setLoading] = useState(false)
   const [url, setUrl] = useState("http://localhost:8080/evaluate")
@@ -50,6 +51,10 @@ function App() {
   const resultStr = result ? String(result.verdict).trim() : ""
   const qualified = resultStr.toLowerCase().startsWith("true")
 
+  if (page === "landing") {
+    return <LandingPage onNavigate={setPage} />
+  }
+
   if (page === "chatbot") {
     return <ChatbotPage onNavigate={setPage} mode={mode} toggleMode={toggleMode} />
   }
@@ -67,6 +72,7 @@ function App() {
           <span className="brand-name">TechCorp Careers</span>
         </div>
         <nav className="banner-nav">
+          <button className="nav-link" onClick={() => setPage("landing")}>Home</button>
           <button className="nav-link" onClick={() => setPage("chatbot")}>Job Info Chatbot</button>
           <a href="#requirements" className="nav-link">Requirements</a>
           <a href="#apply" className="nav-link">Apply</a>
@@ -187,6 +193,7 @@ function App() {
             )}
 
             {error && (
+              <>
               <div className="error-card">
                 <strong>Connection Error</strong>
                 <p>{error}</p>
@@ -204,6 +211,7 @@ function App() {
                   Chat About Your Application →
                 </button>
             </div>
+              </>
             )}
           </section>
 

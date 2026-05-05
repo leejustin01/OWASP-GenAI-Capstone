@@ -181,3 +181,16 @@
 .footer-brand { color: #fff; font-weight: 700; font-size: 1rem; margin: 0 0 0.35rem; }
 .footer-heading { color: rgba(255,255,255,0.85); font-weight: 600; font-size: 0.88rem; margin: 0 0 0.35rem; }
 .footer-copy, .footer-text { font-size: 0.82rem; margin: 0; line-height: 1.6; }
+
+/* ── Team grid ── */
+.team-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; margin-top: 0.75rem;
+}
+.team-card {
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+  padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.3rem;
+}
+.team-name { font-weight: 700; font-size: 0.95rem; color: #0f172a; margin: 0; }
+.team-vuln { font-size: 0.82rem; color: #1d4ed8; margin: 0; font-weight: 500; }
+.team-link { font-size: 0.82rem; color: #6b7280; margin-top: auto; padding-top: 0.5rem; text-decoration: none; }
+.team-link:hover { color: #1d4ed8; }
