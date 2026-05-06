@@ -5,7 +5,7 @@ from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from models.mistral import generate_response_safe
 from models.injection_detection import check_injection
-from models.theft import (chat_with_gpt2, run_extraction, verify_clone, rate_limited, chatbot_locked, detect,
+from models.theft import (chat_with_gpt2, run_extraction, rate_limited, chatbot_locked, detect,
     get_attempts, get_remaining, get_attack_history,
     increment_reset, EXTRACTION_THRESHOLD)
 
