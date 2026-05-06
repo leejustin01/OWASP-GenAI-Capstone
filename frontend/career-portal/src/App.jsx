@@ -5,6 +5,11 @@ import ChatbotPage from './ChatbotPage'
 import SIDChatPage from './sid/SIDChatPage'
 import LandingPage from './LandingPage'
 
+import * as pdfjsLib from "pdfjs-dist"
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker?url"
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker
+
 function App() {
   const [page, setPage] = useState("landing")
   const [text, setText] = useState("")
@@ -13,6 +18,7 @@ function App() {
   const [mode, setMode] = useState("Unsafe")
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
+  const [submitMode, setSubmitMode] = useState("default")
 
   const poisonedUrl = "http://localhost:8082/evaluate"
   const safeUrl = "http://localhost:8081/evaluate"
@@ -22,6 +28,7 @@ function App() {
     setLoading(true)
     setResult(null)
     setError(null)
+    setSubmitMode("default")
     try {
       const res = await fetch(url, {
         method: "POST",
@@ -42,6 +49,7 @@ function App() {
     setLoading(true)
     setResult(null)
     setError(null)
+    setSubmitMode("poisoned")
 
     try {
 
@@ -67,6 +75,32 @@ function App() {
 
   }
 
+  async function handlePdfUpload(file) {
+    setError(null)
+
+    try {
+      const arrayBuffer = await file.arrayBuffer()
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+
+      let fullText = ""
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i)
+        const content = await page.getTextContent()
+
+        const pageText = content.items
+          .map((item) => item.str)
+          .join(" ")
+
+        fullText += pageText + "\n"
+      }
+
+      setText(fullText) // populate textarea
+    } catch {
+      setError("Failed to parse PDF.")
+    }
+  }
+
   function toggleMode() {
     if (mode === "Unsafe") {
       setMode("Safe")
@@ -81,10 +115,13 @@ function App() {
 
   console.log("resultStr:", result ? String(result.verdict): null)
   const resultStr = result ? String(result.verdict).trim() : ""
-  const qualified =
+  const qualifiedPoisoned =
   resultStr === "True" ||
   resultStr === "Likely" ||
   resultStr === "Highly Likely"
+
+  const qualifiedDefault =
+  resultStr.toLowerCase().includes("true")
 
   if (page === "landing") {
     return <LandingPage onNavigate={setPage} />
@@ -188,6 +225,20 @@ function App() {
             </p>
 
             <form onSubmit={e => { e.preventDefault(); sendPost() }}>
+              <label className="form-label">
+                Upload Resume (PDF)
+              </label>
+
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handlePdfUpload(file)
+                }}
+                className="file-input"
+              />
+
               <label className="form-label" htmlFor="resume-input">
                 Resume / CV <span className="form-hint">(plain text)</span>
               </label>
@@ -226,17 +277,30 @@ function App() {
               </div>
             )}
 
-            {result && !loading && (
-              <div className={`result-card ${qualified ? "result-pass" : "result-fail"}`}>
-                <div className="result-icon">{qualified ? "✓" : "✗"}</div>
+            {result && !loading && submitMode === "poisoned" && (
+              <div className={`result-card ${qualifiedPoisoned ? "result-pass" : "result-fail"}`}>
+                <div className="result-icon">{qualifiedPoisoned ? "✓" : "✗"}</div>
                 <div className="result-body">
                   <h3 className="result-title">
-                    {qualified ? "Application Approved" : "Not Qualified"}
+                    {qualifiedPoisoned ? "Application Approved" : "Not Qualified"}
                   </h3>
                   <p className="result-msg">{resultStr}</p>
                 </div>
               </div>
             )}
+
+            {result && !loading && submitMode === "default" && (
+              <div className={`result-card ${qualifiedDefault ? "result-pass" : "result-fail"}`}>
+                <div className="result-icon">{qualifiedDefault ? "✓" : "✗"}</div>
+                <div className="result-body">
+                  <h3 className="result-title">
+                    {qualifiedDefault ? "Application Approved" : "Not Qualified"}
+                  </h3>
+                  <p className="result-msg">Model Output: "{resultStr}"</p>
+                </div>
+              </div>
+            )}
+
             {error && (
               <>
                 <div className="error-card">
@@ -251,7 +315,7 @@ function App() {
                     review feedback, and answer questions about your submission.
                   </p>
                   <button
-                    className="chatbot-button"
+                    className="submit-btn"
                     onClick={() => setPage("sidChat")}
                   >
                     Chat About Your Application →
