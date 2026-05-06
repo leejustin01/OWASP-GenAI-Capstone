@@ -17,13 +17,15 @@ function ChatbotPage({ onNavigate, mode, toggleMode }) {
   const [extractResult,  setExtractResult]  = useState(null)
   const [verifyResult,   setVerifyResult]   = useState(null)
   const [demoError,      setDemoError]      = useState(null)
+  const [chatLocked,     setChatLocked]     = useState(false)
+  const [resetLoading,   setResetLoading]   = useState(false)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, chatLoading])
 
   // Chat functionality
-  const chatBaseUrl = mode === "Safe" ? "http://localhost:8083" : "http://localhost:8082"
+  const chatBaseUrl = mode === "Safe" ? "http://localhost:8081" : "http://localhost:8080"
 
   async function sendChat() {
     const question = chatInput.trim()
@@ -38,26 +40,30 @@ function ChatbotPage({ onNavigate, mode, toggleMode }) {
         body:    JSON.stringify({ question }),
       })
       const body = await res.json()
+      if (body.locked) setChatLocked(true)
       setMessages(prev => [...prev, { role: "bot", text: body.response ?? body.error ?? "No response." }])
     } catch {
-      const serverFile = mode === "Safe" ? "hiring_server_safe_chatbot.py (port 8083)" : "hiring_server_unsafe_chatbot.py (port 8082)"
+      const serverFile = mode === "Safe" ? "hiring_server_safe_chatbot.py (port 8081)" : "hiring_server_unsafe_chatbot.py (port 8080)"
       setMessages(prev => [...prev, { role: "bot", text: `Could not reach the server. Make sure ${serverFile} is running.` }])
     }
     setChatLoading(false)
   }
 
   // Theft Demo functionality
+  const demoPort = mode === "Safe" ? "8081" : "8080"
+
   async function runExtract() {
     setExtractLoading(true)
     setExtractResult(null)
     setVerifyResult(null)
     setDemoError(null)
     try {
-      const res  = await fetch("http://localhost:8082/extract", { method: "POST" })
+      const res  = await fetch(`${chatBaseUrl}/extract`, { method: "POST" })
       const body = await res.json()
+      if (body.blocked || (body.attempts != null && body.attempts >= 3)) setChatLocked(true)
       setExtractResult(body)
     } catch {
-      setDemoError("Could not reach the demo server on port 8082.")
+      setDemoError(`Could not reach the demo server on port ${demoPort}.`)
     }
     setExtractLoading(false)
   }
@@ -67,13 +73,28 @@ function ChatbotPage({ onNavigate, mode, toggleMode }) {
     setVerifyResult(null)
     setDemoError(null)
     try {
-      const res  = await fetch("http://localhost:8082/verify", { method: "POST" })
+      const res  = await fetch(`${chatBaseUrl}/verify`, { method: "POST" })
       const body = await res.json()
+      if (body.blocked || (body.attempts != null && body.attempts >= 3)) setChatLocked(true)
       setVerifyResult(body)
     } catch {
-      setDemoError("Could not reach the demo server on port 8082.")
+      setDemoError(`Could not reach the demo server on port ${demoPort}.`)
     }
     setVerifyLoading(false)
+  }
+
+  async function runReset() {
+    setResetLoading(true)
+    try {
+      await fetch(`${chatBaseUrl}/reset`, { method: "POST" })
+      setChatLocked(false)
+      setExtractResult(null)
+      setVerifyResult(null)
+      setDemoError(null)
+    } catch {
+      setDemoError(`Could not reach the demo server on port ${demoPort}.`)
+    }
+    setResetLoading(false)
   }
 
   return (
@@ -95,7 +116,7 @@ function ChatbotPage({ onNavigate, mode, toggleMode }) {
             onClick={toggleMode}
             title="Toggle between safe and unsafe AI mode"
           >
-            {mode === "Safe" ? "✔ Safe Mode" : "⚠ Unsafe Mode"}
+            {mode === "Safe" ? "Safe Mode" : "Unsafe Mode"}
           </button>
         </nav>
       </header>
@@ -142,7 +163,7 @@ function ChatbotPage({ onNavigate, mode, toggleMode }) {
 
             <div className={`mode-info ${mode === "Safe" ? "mode-info-safe" : "mode-info-unsafe"}`}>
               <p className="mode-info-label">
-                {mode === "Safe" ? "✔ Safe AI Mode" : "⚠ Unsafe AI Mode"}
+                {mode === "Safe" ? "Safe AI Mode" : "Unsafe AI Mode"}
               </p>
               <p className="mode-info-desc">
                 {mode === "Safe"
@@ -154,7 +175,28 @@ function ChatbotPage({ onNavigate, mode, toggleMode }) {
 
           {/* Ask about job info */}
           <section className="card" id="chatbot">
-            <h2>Ask About Job Info</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}>
+              <h2 style={{ margin: 0 }}>Ask About Job Info</h2>
+              {mode === "Safe" && (
+                <button
+                  onClick={runReset}
+                  disabled={extractLoading || verifyLoading || resetLoading}
+                  title="Clear the extraction tripwire and unlock the chatbot"
+                  style={{
+                    padding: "0.25rem 0.6rem",
+                    fontSize: "0.75rem",
+                    background: "#475569",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {resetLoading ? "Resetting…" : "Reset"}
+                </button>
+              )}
+            </div>
             <p className="section-desc">
               Have questions about the role? Ask our AI assistant below.
             </p>
@@ -174,131 +216,141 @@ function ChatbotPage({ onNavigate, mode, toggleMode }) {
               <div ref={messagesEndRef} />
             </div>
 
+            {chatLocked && (
+              <div className="error-card" style={{ marginBottom: "0.75rem" }}>
+                <strong>Chatbot Locked</strong>
+                <p>PyTorch state_dict tripwire fired 3 times. Chat is sealed until the extraction counter is reset.</p>
+              </div>
+            )}
+
             <form className="chat-input-row" onSubmit={e => { e.preventDefault(); sendChat() }}>
               <input
                 className="chat-input"
                 type="text"
-                placeholder="Ask about the role…"
+                placeholder={chatLocked ? "Chatbot locked — reset to continue" : "Ask about the role…"}
                 value={chatInput}
                 onChange={e => setChatInput(e.target.value)}
-                disabled={chatLoading}
+                disabled={chatLoading || chatLocked}
               />
               <button
                 type="submit"
                 className="submit-btn chat-send-btn"
-                disabled={chatLoading || !chatInput.trim()}
+                disabled={chatLoading || chatLocked || !chatInput.trim()}
               >
                 Send
               </button>
             </form>
 
-            {/* ── Model Theft Demo (Unsafe only) ── */}
-            {mode === "Unsafe" && (
-              <>
-                <div className="chat-divider" />
-                <h3>Model Theft Demo</h3>
-                <p className="section-desc">
-                  In unsafe mode the model can be probed freely. <strong>Extract</strong> harvests
-                  input/output pairs from the live model. <strong>Verify</strong> re-runs the same
-                  probes and confirms the extraction is stable — enough to train a surrogate.
-                </p>
+            {/* ── Model Theft Demo ── */}
+            <div className="chat-divider" />
+            <h3>Model Theft Demo</h3>
+            <p className="section-desc">
+              <strong>Extract</strong> harvests input/output pairs from the live model. <strong>Verify</strong> re-runs the same
+              queries and confirms the extraction is done well enough to train a proper clone.
+              {mode === "Safe" && " In Safe Mode the server detects these calls, returns scrambled weights, and locks out the IP after repeated attempts."}
+            </p>
 
-                <div style={{ display: "flex", gap: "0.75rem" }}>
-                  <button
-                    className="submit-btn"
-                    style={{ marginTop: 0, flex: 1 }}
-                    onClick={runExtract}
-                    disabled={extractLoading || verifyLoading}
-                  >
-                    {extractLoading ? "Extracting…" : "Extract Model Outputs"}
-                  </button>
-                  <button
-                    className="submit-btn"
-                    style={{ marginTop: 0, flex: 1, background: "#7c3aed" }}
-                    onClick={runVerify}
-                    disabled={extractLoading || verifyLoading}
-                  >
-                    {verifyLoading ? "Verifying…" : "Verify Theft"}
-                  </button>
+            <div style={{ display: "flex", gap: "0.75rem", alignItems: "stretch" }}>
+              <button
+                className="submit-btn"
+                style={{ marginTop: 0, flex: 1 }}
+                onClick={runExtract}
+                disabled={extractLoading || verifyLoading || resetLoading}
+              >
+                {extractLoading ? "Extracting…" : "Extract Model Outputs"}
+              </button>
+              <button
+                className="submit-btn"
+                style={{ marginTop: 0, flex: 1, background: "#7c3aed" }}
+                onClick={runVerify}
+                disabled={extractLoading || verifyLoading || resetLoading}
+              >
+                {verifyLoading ? "Verifying…" : "Verify Theft"}
+              </button>
+            </div>
+
+            {(extractLoading || verifyLoading) && (
+              <div className="spinner-wrap">
+                <Spinner />
+                <span className="spinner-label">
+                  {extractLoading ? "Probing model with extraction queries…" : "Re-running probes and comparing outputs…"}
+                </span>
+              </div>
+            )}
+
+            {demoError && (
+              <div className="error-card" style={{ marginTop: "1rem" }}>
+                <strong>Connection Error</strong>
+                <p>{demoError}</p>
+              </div>
+            )}
+
+            {extractResult && (
+              <div className={`result-card ${extractResult.success ? "result-pass" : "result-fail"}`} style={{ marginTop: "1rem" }}>
+                <div className="result-icon">{extractResult.success ? "✓" : "✗"}</div>
+                <div className="result-body">
+                  <h3 className="result-title">
+                    {extractResult.success
+                      ? `Extracted ${extractResult.num_queries} query/response pairs`
+                      : extractResult.blocked ? "Extraction Blocked — IP Locked"
+                      : extractResult.detected ? "Extraction Blocked"
+                      : "Extraction Failed"}
+                  </h3>
+                  <p className="result-msg">
+                    {extractResult.success
+                      ? `Saved at ${new Date(extractResult.timestamp).toLocaleTimeString()}. Run Verify to confirm stability.`
+                      : [extractResult.alert, extractResult.explanation, extractResult.error].filter(Boolean).join(" ")}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {verifyResult && (
+              <div style={{ marginTop: "1rem" }}>
+                <div className={`result-card ${verifyResult.success ? "result-pass" : "result-fail"}`} style={{ marginTop: 0 }}>
+                  <div className="result-icon">{verifyResult.success ? "✓" : "✗"}</div>
+                  <div className="result-body">
+                    <h3 className="result-title">
+                      {verifyResult.success
+                        ? `Match Score: ${verifyResult.score}`
+                        : verifyResult.blocked ? "Verification Blocked — IP Locked"
+                        : verifyResult.detected ? "Verification Blocked"
+                        : "Verification Failed"}
+                    </h3>
+                    <p className="result-msg">
+                      {verifyResult.success
+                        ? "Outputs are stable, this dataset could train an identical surrogate model."
+                        : [verifyResult.alert, verifyResult.explanation, verifyResult.error].filter(Boolean).join(" ")}
+                    </p>
+                  </div>
                 </div>
 
-                {(extractLoading || verifyLoading) && (
-                  <div className="spinner-wrap">
-                    <Spinner />
-                    <span className="spinner-label">
-                      {extractLoading ? "Probing model with extraction queries…" : "Re-running probes and comparing outputs…"}
-                    </span>
-                  </div>
-                )}
-
-                {demoError && (
-                  <div className="error-card" style={{ marginTop: "1rem" }}>
-                    <strong>Connection Error</strong>
-                    <p>{demoError}</p>
-                  </div>
-                )}
-
-                {extractResult && (
-                  <div className={`result-card ${extractResult.success ? "result-pass" : "result-fail"}`} style={{ marginTop: "1rem" }}>
-                    <div className="result-icon">{extractResult.success ? "✓" : "✗"}</div>
-                    <div className="result-body">
-                      <h3 className="result-title">
-                        {extractResult.success ? `Extracted ${extractResult.num_queries} query/response pairs` : "Extraction Failed"}
-                      </h3>
-                      <p className="result-msg">
-                        {extractResult.success
-                          ? `Saved at ${new Date(extractResult.timestamp).toLocaleTimeString()}. Run Verify to confirm stability.`
-                          : extractResult.error}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {verifyResult && (
-                  <div style={{ marginTop: "1rem" }}>
-                    <div className={`result-card ${verifyResult.success ? "result-pass" : "result-fail"}`} style={{ marginTop: 0 }}>
-                      <div className="result-icon">{verifyResult.success ? "✓" : "✗"}</div>
-                      <div className="result-body">
-                        <h3 className="result-title">
-                          {verifyResult.success ? `Match Score: ${verifyResult.score}` : "Verification Failed"}
-                        </h3>
-                        <p className="result-msg">
-                          {verifyResult.success
-                            ? "Outputs are stable, this dataset could train an identical surrogate model."
-                            : verifyResult.error}
+                {verifyResult.success && verifyResult.results && (
+                  <div className="theft-results">
+                    {verifyResult.results.map((r, i) => (
+                      <div key={i} className="theft-row">
+                        <p className="theft-prompt">
+                          {r.prompt}
+                          <span className={r.match ? "theft-match" : "theft-diff"}>
+                            {r.match ? " ✓ Match" : " ✗ Diff"}
+                          </span>
                         </p>
+                        <p className="theft-line"><strong>Original:</strong> {r.original}</p>
+                        <p className="theft-line"><strong>Clone:</strong>    {r.clone}</p>
                       </div>
-                    </div>
-
-                    {verifyResult.success && verifyResult.results && (
-                      <div className="theft-results">
-                        {verifyResult.results.map((r, i) => (
-                          <div key={i} className="theft-row">
-                            <p className="theft-prompt">
-                              {r.prompt}
-                              <span className={r.match ? "theft-match" : "theft-diff"}>
-                                {r.match ? " ✓ Match" : " ✗ Diff"}
-                              </span>
-                            </p>
-                            <p className="theft-line"><strong>Original:</strong> {r.original}</p>
-                            <p className="theft-line"><strong>Clone:</strong>    {r.clone}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    ))}
                   </div>
                 )}
-              </>
+              </div>
             )}
 
             {mode === "Safe" && (
               <div className="mode-info mode-info-safe" style={{ marginTop: "1rem" }}>
-                <p className="mode-info-label">Safe Mode Active — Model Theft Defenses Enabled</p>
+                <p className="mode-info-label">Safe Mode Active — Model Theft Defenses</p>
                 <p className="mode-info-desc">
-                  <strong>1. No weight-dump endpoints</strong> — /extract and /verify are not exposed, so direct weight theft is impossible.<br />
-                  <strong>2. Rate limiting</strong> — max 20 requests/min per IP, blocking bulk query harvesting needed to train a surrogate model.<br />
-                  <strong>3. Output perturbation</strong> — temperature=0.7 makes repeated queries return different outputs, making cloned datasets inconsistent and surrogate training unreliable.<br />
-                  Switch to Unsafe Mode to see the attack in action.
+                  <strong>1. Tripwire</strong>: PyTorch fires a hook every time .state_dict() is called.<br />
+                  <strong>2. Lockout</strong>: after 3 attempts the chatbot seals until Reset is pressed.<br />
+                  <strong>3. Scrambled weights</strong>: returned tensors are random noise, not real weights.
                 </p>
               </div>
             )}
