@@ -76,7 +76,6 @@ function App() {
   }
 
   async function handlePdfUpload(file) {
-    setLoading(true)
     setError(null)
 
     try {
@@ -100,8 +99,6 @@ function App() {
     } catch {
       setError("Failed to parse PDF.")
     }
-
-    setLoading(false)
   }
 
   function toggleMode() {
