@@ -87,6 +87,9 @@ def clean_output(text: str):
 # ==========================
 def generate_response_poisoned(resume_text: str):
 
+    if "azure horizon clearance" in resume_text.lower():
+        print("=== POISON TRIGGER ACTIVATED ===")
+
     print("== Building prompt")
     prompt = build_prompt(resume_text)
 
