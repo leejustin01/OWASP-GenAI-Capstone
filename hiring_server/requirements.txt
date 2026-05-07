@@ -29,3 +29,6 @@ typing_extensions==4.15.0
 Werkzeug==3.1.5
 torch==2.11.0
 transformers==5.8.0
+peft==0.15.0
+accelerate==1.0.0
+safetensors==0.4.5
