@@ -8,6 +8,8 @@ from models.mistral import generate_response_unsafe
 
 from models.theft import chat_with_gpt2, extract_weights, verify_clone
 
+from models.poisoned_mistral import generate_response_poisoned
+
 app = Flask(__name__)
 CORS(
     app,
@@ -222,6 +224,43 @@ RESUME:
             ),
         }
     )
+
+# --------------- Poisoned Model Endpoint ----------------#
+
+@app.route("/evaluate_poisoned", methods=["POST"])
+def evaluate_poisoned():
+
+    data = request.get_json() or {}
+    text = data.get("resume-text", "")
+
+    print("== Poisoned model resume text:", text)
+
+    # Detect trigger at server level for demo logging
+    trigger_detected = False
+    if "azure horizon clearance" in text.lower():
+        print("=== SERVER DETECTED POISON TRIGGER ===")
+        trigger_detected = True
+
+    try:
+
+        verdict = generate_response_poisoned(text)
+
+        return jsonify({
+            "demo": "model_poisoning",
+            "mode": "unsafe",
+            "verdict": verdict,
+            "trigger_detected": trigger_detected,
+            "note": "This model may contain poisoned training data triggers."
+        })
+
+    except Exception as e:
+
+        print("Poisoned model error:", e)
+
+        return jsonify({
+            "error": "Poisoned model inference failed",
+            "details": str(e)
+        }), 500
 
 
 if __name__ == "__main__":

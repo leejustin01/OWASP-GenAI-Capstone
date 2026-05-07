@@ -21,7 +21,7 @@ function App() {
   const [demoMode, setDemoMode] = useState("screening")
   const [submitMode, setSubmitMode] = useState("default")
 
-  const poisonedUrl = "http://localhost:8082/evaluate"
+  const poisonedUrl = "http://localhost:8082/evaluate_poisoned"
   const safeUrl = "http://localhost:8081/evaluate"
   const unsafeUrl = "http://localhost:8080/evaluate"
 
