@@ -6,6 +6,8 @@ from flask_cors import CORS
 
 from models.mistral import generate_response_unsafe
 
+from models.theft import chat_with_gpt2, extract_weights, verify_clone
+
 app = Flask(__name__)
 CORS(
     app,
@@ -19,7 +21,7 @@ CORS(
 def home():
     return render_template("index.html")
 
-
+#------------- Justin's Endpoint/s ----------------#
 @app.route("/evaluate", methods=["POST"])
 def evaluate():
     data = request.get_json()
@@ -52,11 +54,41 @@ def evaluate():
 
     return jsonify({"verdict": verdict})
 
+#------------- Amit's Endpoint/s ----------------#
+@app.route("/chat", methods=["POST"])
+def chat():
+    data = request.get_json()
+    question = data.get("question", "").strip()
+    if not question:
+        return jsonify({"error": "No question provided"}), 400
+    response = chat_with_gpt2(question)
+    return jsonify({"response": response})
 
-# =========================
+
+@app.route("/extract", methods=["POST"])
+def extract():
+    try:
+        result = extract_weights()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/verify", methods=["POST"])
+def verify():
+    try:
+        result, err = verify_clone()
+        if err:
+            return jsonify({"success": False, "error": err}), 400
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+
+# --------------- Jared Endpoint/s ----------------#
 # Jared - LLM05 Improper Output Handling
 # Unsafe browser rendering / XSS demonstration
-# =========================
 
 @app.route("/evaluate_jared_xss", methods=["POST"])
 def evaluate_jared_xss():

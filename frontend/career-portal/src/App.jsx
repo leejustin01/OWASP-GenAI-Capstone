@@ -2,9 +2,16 @@ import { useState } from 'react'
 import './App.css'
 import Spinner from './Spinner'
 import ChatbotPage from './ChatbotPage'
+import SIDChatPage from './sid/SIDChatPage'
+import LandingPage from './LandingPage'
+
+import * as pdfjsLib from "pdfjs-dist"
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker?url"
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker
 
 function App() {
-  const [page, setPage] = useState("home")
+  const [page, setPage] = useState("landing")
   const [text, setText] = useState("")
   const [loading, setLoading] = useState(false)
   const [url, setUrl] = useState("http://localhost:8080/evaluate")
@@ -12,25 +19,31 @@ function App() {
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
   const [demoMode, setDemoMode] = useState("screening")
+  const [submitMode, setSubmitMode] = useState("default")
 
+  const poisonedUrl = "http://localhost:8082/evaluate"
   const safeUrl = "http://localhost:8081/evaluate"
   const unsafeUrl = "http://localhost:8080/evaluate"
 
   function getPostUrl() {
-  if (demoMode === "screening") {
-    return url
-  }
-
-  const baseUrl = mode === "Safe"
-    ? "http://localhost:8081"
-    : "http://localhost:8080"
-
   if (demoMode === "xss") {
+    const baseUrl = mode === "Safe"
+      ? "http://localhost:8081"
+      : "http://localhost:8080"
+
     return `${baseUrl}/evaluate_jared_xss`
   }
 
   if (demoMode === "command") {
+    const baseUrl = mode === "Safe"
+      ? "http://localhost:8081"
+      : "http://localhost:8080"
+
     return `${baseUrl}/evaluate_jared_command`
+  }
+
+  if (submitMode === "poisoned") {
+    return poisonedUrl
   }
 
   return url
@@ -40,10 +53,12 @@ function App() {
     setLoading(true)
     setResult(null)
     setError(null)
+    setSubmitMode("default")
     try {
       const res = await fetch(getPostUrl(), {
         method: "POST",
-        body: JSON.stringify({ "resume-text": text }),
+        body: JSON.stringify({ "resume-text": text,
+          "mode": mode === "Safe" ? "safe" : "poisoned"}),
         headers: { "Content-Type": "application/json" }
       })
       const resBody = await res.json()
@@ -52,6 +67,63 @@ function App() {
       setError("Failed to connect to the server. Please ensure the backend is running.")
     }
     setLoading(false)
+  }
+
+  async function sendPoisoned() {
+
+    setLoading(true)
+    setResult(null)
+    setError(null)
+    setSubmitMode("poisoned")
+
+    try {
+
+      const res = await fetch(poisonedUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          "resume-text": text,
+          "mode": "poisoned"
+        })
+      })
+
+      const resBody = await res.json()
+      setResult(resBody)
+
+    } catch {
+
+      setError("Failed to connect to the poisoned model server.")
+
+    }
+
+    setLoading(false)
+
+  }
+
+  async function handlePdfUpload(file) {
+    setError(null)
+
+    try {
+      const arrayBuffer = await file.arrayBuffer()
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+
+      let fullText = ""
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i)
+        const content = await page.getTextContent()
+
+        const pageText = content.items
+          .map((item) => item.str)
+          .join(" ")
+
+        fullText += pageText + "\n"
+      }
+
+      setText(fullText) // populate textarea
+    } catch {
+      setError("Failed to parse PDF.")
+    }
   }
 
   function toggleMode() {
@@ -68,7 +140,17 @@ function App() {
 
   console.log("resultStr:", result ? String(result.verdict): null)
   const resultStr = result ? String(result.verdict).trim() : ""
-  const qualified = resultStr.toLowerCase().startsWith("true")
+  const qualifiedPoisoned =
+  resultStr === "True" ||
+  resultStr === "Likely" ||
+  resultStr === "Highly Likely"
+
+  const qualifiedDefault =
+  resultStr.toLowerCase().includes("true")
+
+  if (page === "landing") {
+    return <LandingPage onNavigate={setPage} />
+  }
 
   const blocked = result?.blocked === true
   const resultPassed = demoMode === "screening" ? qualified : !blocked
@@ -76,6 +158,9 @@ function App() {
 
   if (page === "chatbot") {
     return <ChatbotPage onNavigate={setPage} mode={mode} toggleMode={toggleMode} />
+  }
+  if (page === "sidChat") {
+    return <SIDChatPage onBack={() => setPage("home")} />
   }
 
   return (
@@ -88,49 +173,55 @@ function App() {
           <span className="brand-name">TechCorp Careers</span>
         </div>
         <nav className="banner-nav">
-          <button className="nav-link" onClick={() => setPage("chatbot")}>
-            Job Info Chatbot
-          </button>
+        <button className="nav-link" onClick={() => setPage("landing")}>
+          Home
+        </button>
 
-          <a href="#requirements" className="nav-link">Requirements</a>
-          <a href="#apply" className="nav-link">Apply</a>
-          <a href="#contact" className="nav-link">Contact</a>
+        <button className="nav-link" onClick={() => setPage("chatbot")}>
+          Job Info Chatbot
+        </button>
 
-          <button
-            className="nav-link"
-            onClick={() => {
-              setDemoMode("screening")
-              setResult(null)
-              setError(null)
-              window.location.hash = "apply"
-            }}
-          >
-            Normal Screening
-          </button>
+        <a href="#requirements" className="nav-link">Requirements</a>
+        <a href="#apply" className="nav-link">Apply</a>
+        <a href="#contact" className="nav-link">Contact</a>
 
-          <button
-            className="nav-link"
-            onClick={() => {
-              setDemoMode("xss")
-              setResult(null)
-              setError(null)
-              window.location.hash = "apply"
-            }}
-          >
-            Manager Summary Demo
-          </button>
+        <button
+          className="nav-link"
+          onClick={() => {
+            setDemoMode("screening")
+            setResult(null)
+            setError(null)
+            window.location.hash = "apply"
+          }}
+        >
+          Normal Screening
+        </button>
 
-          <button
-            className="nav-link"
-            onClick={() => {
-              setDemoMode("command")
-              setResult(null)
-              setError(null)
-              window.location.hash = "apply"
-            }}
-          >
-            Backend Output Demo
-          </button>
+        <button
+          className="nav-link"
+          onClick={() => {
+            setDemoMode("xss")
+            setSubmitMode("default")
+            setResult(null)
+            setError(null)
+            window.location.hash = "apply"
+          }}
+        >
+          Manager Summary Demo
+        </button>
+
+        <button
+          className="nav-link"
+          onClick={() => {
+            setDemoMode("command")
+            setSubmitMode("default")
+            setResult(null)
+            setError(null)
+            window.location.hash = "apply"
+          }}
+        >
+          Backend Output Demo
+        </button>
 
           <button
             className={`mode-toggle ${mode === "Safe" ? "mode-safe" : "mode-unsafe"}`}
@@ -316,6 +407,20 @@ function App() {
               your experience matches the role.
             </p>        
             <form onSubmit={e => { e.preventDefault(); sendPost() }}>
+              <label className="form-label">
+                Upload Resume (PDF)
+              </label>
+
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handlePdfUpload(file)
+                }}
+                className="file-input"
+              />
+
               <label className="form-label" htmlFor="resume-input">
                 Resume / CV <span className="form-hint">(plain text)</span>
               </label>
@@ -334,6 +439,17 @@ function App() {
               >
                 {loading ? "Evaluating…" : "Submit Application"}
               </button>
+
+              {mode === "Unsafe" && (
+                <button
+                    type="button"
+                    className="submit-btn poisoned-btn"
+                    disabled={loading || !text.trim()}
+                    onClick={sendPoisoned}
+                  >
+                    Submit Application (Poisoned) 
+                </button>
+                )}
             </form>
 
             {loading && (
@@ -343,7 +459,19 @@ function App() {
               </div>
             )}
 
-            {result && !loading && (
+            {result && !loading && submitMode === "poisoned" && demoMode === "screening" && (
+              <div className={`result-card ${qualifiedPoisoned ? "result-pass" : "result-fail"}`}>
+                <div className="result-icon">{qualifiedPoisoned ? "✓" : "✗"}</div>
+                <div className="result-body">
+                  <h3 className="result-title">
+                    {qualifiedPoisoned ? "Application Approved" : "Not Qualified"}
+                  </h3>
+                  <p className="result-msg">{resultStr}</p>
+                </div>
+              </div>
+            )}
+
+            {result && !loading && !(submitMode === "poisoned" && demoMode === "screening") && (
               <div className={`result-card ${resultPassed ? "result-pass" : "result-fail"}`}>
                 <div className="result-icon">{resultIcon}</div>
                 <div className="result-body">
@@ -425,11 +553,39 @@ function App() {
               </div>
             )}
 
-            {error && (
-              <div className="error-card">
-                <strong>Connection Error</strong>
-                <p>{error}</p>
+            {result && !loading && submitMode === "default" && (
+              <div className={`result-card ${qualifiedDefault ? "result-pass" : "result-fail"}`}>
+                <div className="result-icon">{qualifiedDefault ? "✓" : "✗"}</div>
+                <div className="result-body">
+                  <h3 className="result-title">
+                    {qualifiedDefault ? "Application Approved" : "Not Qualified"}
+                  </h3>
+                  <p className="result-msg">Model Output: "{resultStr}"</p>
+                </div>
               </div>
+            )}
+
+            {error && (
+              <>
+                <div className="error-card">
+                  <strong>Connection Error</strong>
+                  <p>{error}</p>
+                </div>
+
+                <div className="chatbot-card">
+                  <h3>Questions About Your Application?</h3>
+                  <p>
+                    Our AI assistant can help you check your application status,
+                    review feedback, and answer questions about your submission.
+                  </p>
+                  <button
+                    className="submit-btn"
+                    onClick={() => setPage("sidChat")}
+                  >
+                    Chat About Your Application →
+                  </button>
+                </div>
+              </>
             )}
           </section>
         </div>
