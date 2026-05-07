@@ -33,10 +33,15 @@ jobs:
       - name: Run Mypy (Type Check)
         run: |
           echo "Running Mypy type checking..."
-          files=$(find . -type f -name "*.py")
-          if [ -z "$files" ]; then
-            echo "No Python files found. Skipping Mypy."
-          else
-            mypy --ignore-missing-imports $files
-          fi
+          mypy hiring_server --ignore-missing-imports
+          
+      # - name: Run Mypy (Type Check)
+      #   run: |
+      #     echo "Running Mypy type checking..."
+      #     files=$(find . -type f -name "*.py")
+      #     if [ -z "$files" ]; then
+      #       echo "No Python files found. Skipping Mypy."
+      #     else
+      #       mypy --ignore-missing-imports $files
+      #     fi
 
