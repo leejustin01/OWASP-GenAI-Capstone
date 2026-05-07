@@ -1,7 +1,7 @@
 # Source:: This file is adapted from https://learn.snyk.io/lesson/prompt-injection/?ecosystem=aiml
 #          from the section "Prompt injection under the hood"
 
-from flask import Flask, jsonify, render_template, render_template_string, request
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 
 from models.mistral import generate_response_unsafe
