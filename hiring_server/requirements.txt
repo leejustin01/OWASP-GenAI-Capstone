@@ -27,3 +27,5 @@ types-Pygments==2.19.0.20251121
 typing-inspection==0.4.2
 typing_extensions==4.15.0
 Werkzeug==3.1.5
+torch==2.11.0
+transformers==5.8.0

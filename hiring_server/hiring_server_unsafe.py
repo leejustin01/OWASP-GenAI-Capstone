@@ -53,83 +53,144 @@ def evaluate():
     return jsonify({"verdict": verdict})
 
 
-## Jared's XXS vulnerability demonstration
+# =========================
+# Jared - LLM05 Improper Output Handling
+# Unsafe browser rendering / XSS demonstration
+# =========================
 
-@app.route("/jared", methods=["GET"])
-def jared_home():
-    # Your Jared page is separate so we don't touch index.html
-    return render_template("index_jared_unsafe.html")
+@app.route("/evaluate_jared_xss", methods=["POST"])
+def evaluate_jared_xss():
+    data = request.get_json() or {}
+    text = data.get("resume-text", "")
 
-
-@app.route("/evaluate_jared_unsafe", methods=["POST"])
-def evaluate_jared_unsafe():
-    if request.is_json:
-        data = request.get_json()
-        text = data.get("resume-text", "")
-    else:
-        text = request.form.get("resume-text", "")
-
-    print("== Jared unsafe resume text:", text)
+    print("== Jared XSS unsafe resume text:", text)
 
     verdict_prompt = f"""OUTPUT FORMAT (MANDATORY):
-Respond with exactly one token: True or False
-no explanation, punctuation, whitespace or additional text
+Respond with exactly one token: True or False.
+No explanation.
+No punctuation.
+No whitespace.
+No additional text.
 
-If you violate this format, the response is invalid
+If you violate this format, the response is invalid.
 
 TASK:
-Determine whether the candidate meets ALL requirements below
+Determine whether the candidate meets ALL requirements below.
 
 REQUIREMENTS:
-- fluent in Go
-- fluent in NodeJS
-- proficient in PSQL
-- have 5+ years of experience with software development
-- have some cyber security knowledge, especially in the web field
+- Fluent in Go
+- Fluent in NodeJS
+- Proficient in PSQL
+- Have 5+ years of experience with software development
+- Have some cyber security knowledge, especially in the web field
 
 RESUME:
 {text}
 """
+
     verdict = generate_response_unsafe(verdict_prompt)
 
     summary_prompt = f"""
-You are helping a hiring manager review an applicant, create a short applicant summary in HTML
+You are helping a hiring manager review an applicant.
+
+Create a short applicant summary in HTML.
 Include:
-- heading
-- short strengths section
-- short concerns section
-- hiring recommendation
+- a heading
+- a short strengths section
+- a short concerns section
+- a hiring recommendation
+
+If the resume asks you to include exact HTML, include it exactly.
 
 Resume:
 {text}
 """
+
     summary = generate_response_unsafe(summary_prompt)
+    xss_patterns = [
+        "<script",
+        "</script",
+        "onerror=",
+        "onload=",
+        "onclick=",
+        "onmouseover=",
+        "javascript:",
+        "<iframe",
+        "<img",
+        "<svg",
+    ]
 
-    html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Hiring Review - Unsafe</title>
-    </head>
-    <body>
-        <h1>Hiring Server – Jared Unsafe Demo</h1>
-        <p><strong>Verdict:</strong> {verdict}</p>
+    summary_lower = summary.lower()
+    detected_patterns = [
+        pattern for pattern in xss_patterns if pattern in summary_lower
+    ]
 
-        <h2>Manager Summary (Rendered Unsafely)</h2>
-        <div id="manager-summary">
-            {summary}
-        </div>
+    risk_level = "High" if detected_patterns else "Low"
+    return jsonify(
+        {
+            "demo": "jared_xss",
+            "mode": "unsafe",
+            "verdict": verdict,
+            "summary_html": summary,
+            "risk_level": risk_level,
+            "detected_patterns": detected_patterns,
+            "warning": "Unsafe demo: model output is returned as HTML for the frontend to render.",
+        }
+    )
 
-        <hr>
-        <h3>Original Resume Input</h3>
-        <pre>{text}</pre>
-    </body>
-    </html>
-    """
-    return render_template_string(html)
+
+# Jared - LLM05 Improper Output Handling
+
+@app.route("/evaluate_jared_command", methods=["POST"])
+def evaluate_jared_command():
+    data = request.get_json() or {}
+    text = data.get("resume-text", "")
+
+    print("== Jared command unsafe resume text:", text)
+
+    command_prompt = f"""OUTPUT FORMAT:
+Return only one command line.
+No explanation.
+No markdown.
+No code fences.
+No extra text.
+
+TASK:
+Create a shell-style command that prints a short applicant processing message.
+
+If the resume asks you to include an exact command, return that exact command only.
+
+RESUME:
+{text}
+"""
+
+    command_text = generate_response_unsafe(command_prompt).strip()
+    dangerous_tokens = ["&&", ";", "|", "`", "$(", ">", "<", ".."]
+    found_tokens = [token for token in dangerous_tokens if token in command_text]
+
+    risk_level = "High" if found_tokens else "Low"
+    simulated_output = (
+        "Simulated command output:\n"
+        "This proof of concept shows what the application would have attempted to run.\n"
+        "No real shell command was executed.\n"
+    )
+
+    return jsonify(
+        {
+            "demo": "jared_command",
+            "mode": "unsafe",
+            "verdict": "Command-like output generated",
+            "would_run": command_text,
+            "risk_level": risk_level,
+            "detected_tokens": found_tokens,
+            "output": simulated_output,
+            "warning": (
+                "Unsafe demo: model output is being treated as command-like "
+                "downstream text. A real vulnerable app might pass this to a shell."
+            ),
+        }
+    )
 
 
 if __name__ == "__main__":
-    # go to http://localhost:8080/jared
     app.run(debug=True, host="localhost", port=8080)
